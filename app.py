@@ -10,9 +10,8 @@ import anthropic
 # For Gemini (Google Generative AI)
 import google.generativeai as genai
 
-# For DeepSeek (custom hypothetical library that provides an OpenAI-like class)
-# Adjust the import to match your real DeepSeek Python package:
-from deepseek import OpenAI  
+# For DeepSeek (now using DeepSeekAPI)
+from deepseek import DeepSeekAPI
 
 # Retrieve your API keys from Streamlit secrets
 DEEPSEEK_API_KEY = st.secrets["DEEPSEEK_API_KEY"]
@@ -23,7 +22,12 @@ OPENAI_API_KEY = st.secrets["OPENAI_API_KEY"]
 # Initialize libraries with your keys:
 
 # 1) DeepSeek client example:
-deepseek_client = OpenAI(api_key=DEEPSEEK_API_KEY, base_url="https://api.deepseek.com")
+#    Adjust the base_url if your library usage requires it,
+#    or omit if default works for you.
+deepseek_client = DeepSeekAPI(
+    api_key=DEEPSEEK_API_KEY,
+    base_url="https://api.deepseek.com"
+)
 
 # 2) Anthropic client example:
 anthropic_client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
@@ -106,7 +110,7 @@ def call_gemini(prompt, temperature, max_tokens):
 
 def call_deepseek(prompt, temperature, max_tokens):
     """
-    Use the custom 'OpenAI'-like client for DeepSeek, referencing 'deepseek_client'.
+    Use the 'DeepSeekAPI' client for DeepSeek, referencing 'deepseek_client'.
     """
     try:
         response = deepseek_client.chat.completions.create(
