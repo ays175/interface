@@ -1,8 +1,8 @@
 import streamlit as st
 import requests
-# For DeepSeek custom client
-# (If this is truly a different library from the standard openai):
-from openai import OpenAI  # <-- Hypothetical library that supports base_url for DeepSeek
+
+# For ChatGPT (official openai library)
+import openai
 
 # For Anthropic
 import anthropic
@@ -10,8 +10,9 @@ import anthropic
 # For Gemini (Google Generative AI)
 import google.generativeai as genai
 
-# For ChatGPT (official openai library) - typically you'd do 'import openai'
-import openai
+# For DeepSeek (custom hypothetical library that provides an OpenAI-like class)
+# Adjust the import to match your real DeepSeek Python package:
+from deepseek import OpenAI  
 
 # Retrieve your API keys from Streamlit secrets
 DEEPSEEK_API_KEY = st.secrets["DEEPSEEK_API_KEY"]
@@ -20,16 +21,17 @@ GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
 OPENAI_API_KEY = st.secrets["OPENAI_API_KEY"]
 
 # Initialize libraries with your keys:
-# DeepSeek client example:
+
+# 1) DeepSeek client example:
 deepseek_client = OpenAI(api_key=DEEPSEEK_API_KEY, base_url="https://api.deepseek.com")
 
-# Anthropic client example:
+# 2) Anthropic client example:
 anthropic_client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
-# Gemini client example:
+# 3) Gemini client example:
 genai.configure(api_key=GOOGLE_API_KEY)
 
-# ChatGPT / OpenAI:
+# 4) ChatGPT / OpenAI:
 openai.api_key = OPENAI_API_KEY
 
 # List of model choices (UI labels)
@@ -46,11 +48,11 @@ max_tokens = st.slider("Max Tokens", 16, 1024, 128, 16)
 
 def call_chatgpt(prompt, temperature, max_tokens):
     """
-    Use the official OpenAI library for ChatGPT (gpt-3.5 or gpt-4).
+    Use the official OpenAI library for ChatGPT (gpt-3.5 / gpt-4, etc.).
     """
     try:
         response = openai.ChatCompletion.create(
-            model="gpt-4o-mini-realtime-preview",  # or "gpt-4", etc.
+            model="gpt-4o-mini-realtime-preview",  # or "gpt-3.5-turbo", etc.
             messages=[{"role": "user", "content": prompt}],
             temperature=temperature,
             max_tokens=max_tokens
@@ -65,12 +67,10 @@ def call_claude(prompt, temperature, max_tokens):
     The 'anthropic_client.messages.create' usage can differ based on library versions.
     """
     try:
-        # Example structure (may differ in actual usage):
         message = anthropic_client.messages.create(
-            model="claude-3-5-sonnet-20241022",  # example model
+            model="claude-3-5-sonnet-20241022",  # example model name
             max_tokens=max_tokens,
             temperature=temperature,
-            # 'system' and 'messages' fields vary by library version
             system="You are an AI assistant that helps with general queries.",
             messages=[
                 {
@@ -109,7 +109,6 @@ def call_deepseek(prompt, temperature, max_tokens):
     Use the custom 'OpenAI'-like client for DeepSeek, referencing 'deepseek_client'.
     """
     try:
-        # Example usage from your snippet:
         response = deepseek_client.chat.completions.create(
             model="deepseek-chat",  # or the correct DeepSeek model name
             messages=[
