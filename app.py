@@ -1,16 +1,24 @@
 import streamlit as st
 import requests
 
-# For ChatGPT (official openai library)
+###############################
+# 1) ChatGPT (OpenAI)
+###############################
 import openai
 
-# For Anthropic
+###############################
+# 2) Claude (Anthropic)
+###############################
 import anthropic
 
-# For Gemini (Google Generative AI)
+###############################
+# 3) Gemini (Google Generative AI)
+###############################
 import google.generativeai as genai
 
-# For DeepSeek
+###############################
+# 4) DeepSeek
+###############################
 from deepseek import DeepSeekAPI
 
 # Retrieve your API keys from Streamlit secrets
@@ -19,112 +27,138 @@ ANTHROPIC_API_KEY = st.secrets["ANTHROPIC_API_KEY"]
 GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
 OPENAI_API_KEY = st.secrets["OPENAI_API_KEY"]
 
-# 1) DeepSeek client
-deepseek_client = DeepSeekAPI(api_key=DEEPSEEK_API_KEY)
+# --------------------------------
+# Initialize each client/SDK
+# --------------------------------
 
-# 2) Anthropic client
-anthropic_client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
-
-# 3) Gemini client
-genai.configure(api_key=GOOGLE_API_KEY)
-
-# 4) ChatGPT / OpenAI
+# ChatGPT / OpenAI
 openai.api_key = OPENAI_API_KEY
 
-# List of model choices (UI labels)
-LLM_OPTIONS = ["ChatGPT", "Claude", "Gemini", "DeepSeek"]
+# Claude / Anthropic:
+# Typically you create a 'Client' or 'Anthropic' instance, then call 'completion()'
+anthropic_client = anthropic.Client(api_key=ANTHROPIC_API_KEY)
 
+# Gemini / Google Generative AI
+# For most recent google.generativeai usage, you often call genai.generate_text()
+genai.configure(api_key=GOOGLE_API_KEY)
+
+# DeepSeek
+# If your library does NOT have a `.chat` attribute, we assume you call `.completions.create()`.
+deepseek_client = DeepSeekAPI(api_key=DEEPSEEK_API_KEY)
+
+# --------------------------------
+# Streamlit UI
+# --------------------------------
+LLM_OPTIONS = ["ChatGPT", "Claude", "Gemini", "DeepSeek"]
 st.title("Multiple LLMs (Streamlit + Secrets)")
 
 selected_model = st.selectbox("Select a Model", LLM_OPTIONS)
 user_prompt = st.text_area("Enter your prompt")
 
-# Additional options (optional)
 temperature = st.slider("Temperature", 0.0, 1.0, 0.7, 0.1)
-max_tokens = st.slider("Max Tokens", 16, 1024, 128, 16)
+max_tokens = st.slider("Max Tokens", 16, 512, 128, 16)
 
+###############################
+# 1) ChatGPT
+###############################
 def call_chatgpt(prompt, temperature, max_tokens):
     """
-    Use the official OpenAI library for ChatGPT (gpt-3.5-turbo / gpt-4).
+    Example of calling the official OpenAI ChatCompletion endpoint (chat models).
+    Valid chat models include 'gpt-3.5-turbo', 'gpt-4', etc.
     """
     try:
         response = openai.ChatCompletion.create(
-            model="gpt-4",  # or "gpt-3.5-turbo", etc.
+            model="gpt-4",  # or "gpt-3.5-turbo"
             messages=[{"role": "user", "content": prompt}],
             temperature=temperature,
             max_tokens=max_tokens
         )
         return response.choices[0].message["content"]
     except Exception as e:
-        return f"ChatGPT Error: {str(e)}"
+        return f"ChatGPT Error: {e}"
 
+###############################
+# 2) Claude (Anthropic)
+###############################
 def call_claude(prompt, temperature, max_tokens):
     """
-    Use the Anthropic Python client (Anthropic).
-    The 'anthropic_client.messages.create' usage can differ by library version.
-    We return 'message.text' here instead of 'message.content'.
+    Example of calling the Anthropic 'completion' endpoint with anthropic.Client.
+    We must build the prompt with HUMANS_PROMPT + your text + AI_PROMPT, etc.
+    The response is typically in resp['completion'] (a string), not 'message.text'.
     """
     try:
-        message = anthropic_client.messages.create(
-            model="claude-3-5-sonnet-20241022",  # example model name
-            max_tokens=max_tokens,
-            temperature=temperature,
-            system="You are an AI assistant that helps with general queries.",
-            messages=[
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": prompt
-                        }
-                    ]
-                }
-            ]
-        )
-        return message.text
-    except Exception as e:
-        return f"Claude Error: {str(e)}"
+        # Construct the full prompt as recommended by Anthropic:
+        # anthropic.HUMAN_PROMPT = "\n\nHuman:"
+        # anthropic.AI_PROMPT = "\n\nAssistant:"
+        full_prompt = anthropic.HUMAN_PROMPT + prompt + anthropic.AI_PROMPT
 
+        resp = anthropic_client.completion(
+            prompt=full_prompt,
+            model="claude-v1",  # or "claude-2", etc. Adjust to your actual model name
+            max_tokens_to_sample=max_tokens,
+            temperature=temperature
+        )
+
+        # The returned dict typically has a key 'completion'
+        return resp.get("completion", "No completion found.")
+    except Exception as e:
+        return f"Claude Error: {e}"
+
+###############################
+# 3) Gemini (Google Generative AI)
+###############################
 def call_gemini(prompt, temperature, max_tokens):
     """
-    Use google.generativeai library for Gemini.
-    'gemini-1.0-pro-latest' is an example model name—adjust as needed.
+    Example of calling google.generativeai for a 'chat' or 'text' model.
+    Depending on your version, you might use genai.generate_text(...) 
+    with model="models/chat-bison-001" or another name.
+
+    'init() got an unexpected keyword argument 'name'' means the usage 
+    with GenerativeModel(name=...) might be outdated or mismatched.
     """
     try:
-        model = genai.GenerativeModel(name="gemini-1.0-pro-latest")
-        response = model.generate_content(
-            prompt,
+        # Typically you do something like:
+        # model="models/chat-bison-001" (adjust this to your accessible model)
+        response = genai.generate_text(
+            model="models/chat-bison-001",
+            prompt=prompt,
             temperature=temperature,
-            max_tokens=max_tokens
+            max_output_tokens=max_tokens
         )
-        return response.text
+        # The result is an object with a property 'generated_text'
+        return response.generated_text
     except Exception as e:
-        return f"Gemini Error: {str(e)}"
+        return f"Gemini Error: {e}"
 
+###############################
+# 4) DeepSeek
+###############################
 def call_deepseek(prompt, temperature, max_tokens):
     """
-    Use the 'DeepSeekAPI' client for DeepSeek, referencing 'deepseek_client'.
+    If 'DeepSeekAPI' object has no attribute 'chat', 
+    we assume you just call 'completions.create(...)' directly.
+
+    Check your actual library docs for the correct usage and parameters.
     """
     try:
-        response = deepseek_client.chat.completions.create(
-            model="deepseek-chat",  # or another valid DeepSeek model
-            messages=[
-                {"role": "system", "content": "You are a helpful assistant."},
-                {"role": "user", "content": prompt},
-            ],
-            stream=False,
+        # Example usage if there's a `.completions` attribute:
+        # If it's something else, adapt accordingly.
+        response = deepseek_client.completions.create(
+            model="deepseek-chat",  # or whichever DeepSeek model is valid
+            prompt=prompt,          # or messages?
             temperature=temperature,
             max_tokens=max_tokens
         )
-        return response.choices[0].message.content
-    except Exception as e:
-        return f"DeepSeek Error: {str(e)}"
 
+        # Typically the response might be in response.choices[0].text
+        return response.choices[0].text
+    except Exception as e:
+        return f"DeepSeek Error: {e}"
+
+###############################
+# Dispatch
+###############################
 def generate_response(model_name, prompt, temp, tokens):
-    """
-    Dispatch function to the correct LLM.
-    """
     if model_name == "ChatGPT":
         return call_chatgpt(prompt, temp, tokens)
     elif model_name == "Claude":
@@ -136,6 +170,9 @@ def generate_response(model_name, prompt, temp, tokens):
     else:
         return "Unknown model selected."
 
+###############################
+# Streamlit Button
+###############################
 if st.button("Generate"):
     if not user_prompt.strip():
         st.warning("Please enter a prompt.")
