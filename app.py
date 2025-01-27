@@ -1,5 +1,5 @@
 import streamlit as st
-
+import requests
 # For DeepSeek custom client
 # (If this is truly a different library from the standard openai):
 from openai import OpenAI  # <-- Hypothetical library that supports base_url for DeepSeek
