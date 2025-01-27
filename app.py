@@ -10,7 +10,7 @@ import anthropic
 # For Gemini (Google Generative AI)
 import google.generativeai as genai
 
-# For DeepSeek (now using DeepSeekAPI)
+# For DeepSeek
 from deepseek import DeepSeekAPI
 
 # Retrieve your API keys from Streamlit secrets
@@ -19,20 +19,16 @@ ANTHROPIC_API_KEY = st.secrets["ANTHROPIC_API_KEY"]
 GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
 OPENAI_API_KEY = st.secrets["OPENAI_API_KEY"]
 
-# Initialize libraries with your keys:
-
-# 1) DeepSeek client example:
-#    Adjust the base_url if your library usage requires it,
-#    or omit if default works for you.
+# 1) DeepSeek client
 deepseek_client = DeepSeekAPI(api_key=DEEPSEEK_API_KEY)
 
-# 2) Anthropic client example:
+# 2) Anthropic client
 anthropic_client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
-# 3) Gemini client example:
+# 3) Gemini client
 genai.configure(api_key=GOOGLE_API_KEY)
 
-# 4) ChatGPT / OpenAI:
+# 4) ChatGPT / OpenAI
 openai.api_key = OPENAI_API_KEY
 
 # List of model choices (UI labels)
@@ -49,11 +45,11 @@ max_tokens = st.slider("Max Tokens", 16, 1024, 128, 16)
 
 def call_chatgpt(prompt, temperature, max_tokens):
     """
-    Use the official OpenAI library for ChatGPT (gpt-3.5 / gpt-4, etc.).
+    Use the official OpenAI library for ChatGPT (gpt-3.5-turbo / gpt-4).
     """
     try:
         response = openai.ChatCompletion.create(
-            model="gpt-4o-mini-realtime-preview",  # or "gpt-3.5-turbo", etc.
+            model="gpt-4",  # or "gpt-3.5-turbo", etc.
             messages=[{"role": "user", "content": prompt}],
             temperature=temperature,
             max_tokens=max_tokens
@@ -64,8 +60,9 @@ def call_chatgpt(prompt, temperature, max_tokens):
 
 def call_claude(prompt, temperature, max_tokens):
     """
-    Use the Anthropic Python client.
-    The 'anthropic_client.messages.create' usage can differ based on library versions.
+    Use the Anthropic Python client (Anthropic).
+    The 'anthropic_client.messages.create' usage can differ by library version.
+    We return 'message.text' here instead of 'message.content'.
     """
     try:
         message = anthropic_client.messages.create(
@@ -85,17 +82,17 @@ def call_claude(prompt, temperature, max_tokens):
                 }
             ]
         )
-        return message.content
+        return message.text
     except Exception as e:
         return f"Claude Error: {str(e)}"
 
 def call_gemini(prompt, temperature, max_tokens):
     """
     Use google.generativeai library for Gemini.
-    'gemini-1.5-flash' is a placeholder; adapt as needed.
+    'gemini-1.0-pro-latest' is an example model name—adjust as needed.
     """
     try:
-        model = genai.GenerativeModel(name="gemini-1.5-flash")
+        model = genai.GenerativeModel(name="gemini-1.0-pro-latest")
         response = model.generate_content(
             prompt,
             temperature=temperature,
@@ -111,7 +108,7 @@ def call_deepseek(prompt, temperature, max_tokens):
     """
     try:
         response = deepseek_client.chat.completions.create(
-            model="deepseek-chat",  # or the correct DeepSeek model name
+            model="deepseek-chat",  # or another valid DeepSeek model
             messages=[
                 {"role": "system", "content": "You are a helpful assistant."},
                 {"role": "user", "content": prompt},
