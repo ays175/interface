@@ -3,4 +3,5 @@ openai==0.28
 anthropic
 google-generativeai
 requests
+deepseek
 
