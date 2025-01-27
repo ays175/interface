@@ -24,10 +24,7 @@ OPENAI_API_KEY = st.secrets["OPENAI_API_KEY"]
 # 1) DeepSeek client example:
 #    Adjust the base_url if your library usage requires it,
 #    or omit if default works for you.
-deepseek_client = DeepSeekAPI(
-    api_key=DEEPSEEK_API_KEY,
-    base_url="https://api.deepseek.com"
-)
+deepseek_client = DeepSeekAPI(api_key=DEEPSEEK_API_KEY)
 
 # 2) Anthropic client example:
 anthropic_client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
